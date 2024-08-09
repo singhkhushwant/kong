@@ -79,6 +79,7 @@ _M.upstream_url_format = {
   gemini        = "https://generativelanguage.googleapis.com",
   gemini_vertex = "https://%s",
   bedrock       = "https://bedrock-runtime.%s.amazonaws.com",
+  huggingface   = "https://api-inference.huggingface.co/models/%s",
 }
 
 _M.operation_map = {
@@ -131,6 +132,15 @@ _M.operation_map = {
   gemini_vertex = {
     ["llm/v1/chat"] = {
       path = "/v1/projects/%s/locations/%s/publishers/google/models/%s:%s",
+    },
+  },
+  huggingface = {
+    ["llm/v1/completions"] = {
+      path = "/models/%s",
+      method = "POST",
+    },
+    ["llm/v1/chat"] = {
+      path = "/models/%s",
       method = "POST",
     },
   },
