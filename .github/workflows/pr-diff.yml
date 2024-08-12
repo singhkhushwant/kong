@@ -40,20 +40,40 @@ jobs:
           echo "Comment does not match format: '/prdiff <pr_url>': ignoring"
         fi
 
-    - name: Get current PR URL
+    - name: Validate input
       if: steps.read_comment.outputs.other_pr
+      id: validate_url
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const url = `${{ steps.read_comment.outputs.other_pr }}`;
+
+          try {
+            const validUrl = new URL(url);
+            
+            // Check if URL is a GitHub PR URL
+            const regex = /^https:\/\/github\.com\/[^\/]+\/[^\/]+\/pull\/\d+$/;
+            if (!regex.test(validUrl.href)) {
+              core.setFailed('The provided URL is not a valid GitHub PR URL.');
+            }
+          } catch (error) {
+            core.setFailed('The provided URL is not valid.');
+          }
+
+    - name: Get current PR URL
+      if: success() && steps.read_comment.outputs.other_pr
       id: get_pr_url
       run: |
         PR_URL="https://github.com/${{ github.repository }}/pull/${{ github.event.issue.number }}"
         echo "PR_URL=$PR_URL" >> $GITHUB_OUTPUT
 
     - name: Obtain diff with the PR provided
-      if: steps.read_comment.outputs.other_pr
+      if: success() && steps.read_comment.outputs.other_pr
       id: run_extension
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh extension install samugi/gh-compr --pin "1.0.0"
+        gh extension install samugi/gh-compr --pin "3785a2d3270c52164fb1f7f63bd3c5df66bedead"
         OTHER_PR=${{ steps.read_comment.outputs.other_pr }}
         CURRENT_PR=${{ steps.get_pr_url.outputs.PR_URL }}
 
