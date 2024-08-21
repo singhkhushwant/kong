@@ -36,6 +36,8 @@ local available_types = {}
 
 local POOL_SPAN_STORAGE = "KONG_SPAN_STORAGE"
 
+local dyn_hook = require "kong.dynamic_hook"
+
 -- Record DB query
 function _M.db_query(connector)
   local f = connector.query
@@ -221,44 +223,54 @@ end
 _M.available_types = available_types
 
 
--- Record inbound request
-function _M.request(ctx)
-  local client = kong.client
+do
+  local function request_impl(ctx)
+    ngx.log(ngx.ERR, "we are in impl")
+    local client = kong.client
 
-  local method = get_method()
-  local scheme = ctx.scheme or var.scheme
-  local host = var.host
-  -- passing full URI to http.url attribute
-  local req_uri = scheme .. "://" .. host .. (ctx.request_uri or var.request_uri)
+    local method = get_method()
+    local scheme = ctx.scheme or var.scheme
+    local host = var.host
+    -- passing full URI to http.url attribute
+    local req_uri = scheme .. "://" .. host .. (ctx.request_uri or var.request_uri)
 
-  local start_time = ctx.KONG_PROCESSING_START
-                 and ctx.KONG_PROCESSING_START * 1e6
-                  or time_ns()
+    local start_time = ctx.KONG_PROCESSING_START
+                   and ctx.KONG_PROCESSING_START * 1e6
+                    or time_ns()
 
-  local http_flavor = ngx.req.http_version()
-  if type(http_flavor) == "number" then
-    http_flavor = string.format("%.1f", http_flavor)
+    local http_flavor = ngx.req.http_version()
+    if type(http_flavor) == "number" then
+      http_flavor = string.format("%.1f", http_flavor)
+    end
+
+    local active_span = tracer.start_span("kong", {
+      span_kind = 2, -- server
+      start_time_ns = start_time,
+      attributes = {
+        ["http.method"] = method,
+        ["http.url"] = req_uri,
+        ["http.host"] = host,
+        ["http.scheme"] = scheme,
+        ["http.flavor"] = http_flavor,
+        ["http.client_ip"] = client.get_forwarded_ip(),
+        ["net.peer.ip"] = client.get_ip(),
+        ["kong.request.id"] = request_id_get(),
+      },
+    })
+
+    -- update the tracing context with the request span trace ID
+    tracing_context.set_raw_trace_id(active_span.trace_id, ctx)
+
+    tracer.set_active_span(active_span)
   end
 
-  local active_span = tracer.start_span("kong", {
-    span_kind = 2, -- server
-    start_time_ns = start_time,
-    attributes = {
-      ["http.method"] = method,
-      ["http.url"] = req_uri,
-      ["http.host"] = host,
-      ["http.scheme"] = scheme,
-      ["http.flavor"] = http_flavor,
-      ["http.client_ip"] = client.get_forwarded_ip(),
-      ["net.peer.ip"] = client.get_ip(),
-      ["kong.request.id"] = request_id_get(),
-    },
-  })
+  dyn_hook.hook("instrumentations:request", "request", request_impl)
+end
 
-  -- update the tracing context with the request span trace ID
-  tracing_context.set_raw_trace_id(active_span.trace_id, ctx)
-
-  tracer.set_active_span(active_span)
+-- Record inbound request
+function _M.request(ctx)
+  ngx.log(ngx.ERR, "we are in request")
+  dyn_hook.run_hook("instrumentations:request", "request", ctx)
 end
 
 
@@ -407,6 +419,9 @@ function _M.init(config)
   assert(sampling_rate >= 0 and sampling_rate <= 1)
 
   local enabled = trace_types[1] ~= "off"
+
+  -- FIXME: enable each instrumentation (that is turned on in the config) here
+  -- dyn_hook.enable_by_default("instrumentations:request")
 
   -- noop instrumentations
   -- TODO: support stream module

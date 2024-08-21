@@ -33,6 +33,7 @@ function _M:register(method, func)
     self.capabilities[cap] = true
     table.insert(self.capabilities_list, cap)
   end
+  print("self.callbacks = " .. require("inspect")(self.callbacks))
   self.callbacks[method] = func
 end
 
@@ -40,6 +41,7 @@ end
 -- returns a list of capabilities of this node, like:
 -- ["kong.meta.v1", "kong.debug.v1", ...]
 function _M:get_capabilities_list()
+  print("self.capabilities_list = " .. require("inspect")(self.capabilities_list))
   return self.capabilities_list
 end
 
