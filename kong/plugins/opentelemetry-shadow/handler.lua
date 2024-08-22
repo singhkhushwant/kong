@@ -12,11 +12,12 @@ OpenTelemetryShadow = {
 
 function OpenTelemetryShadow:init_worker()
   local function _handler_configure(configs)
-    handler.header_configure(configs)
+    handler.configure(configs)
   end
 
-  local function _handler_access(ctx)
-    handler.access(ctx)
+  local function _handler_access(config)
+    print("XXXXXXXXXXXXXXXXXXXXXXXXXXXX: ctx = " .. require("inspect")(config))
+    handler.access(config)
   end
 
   local function _handler_header_filter(ctx)
@@ -36,8 +37,9 @@ function OpenTelemetryShadow:configure(configs)
   dynamic_hook.run_hook("opentelemetry-shadow", "configure", configs)
 end
 
-function OpenTelemetryShadow:access(ctx)
-  dynamic_hook.run_hook("opentelemetry-shadow", "access", ctx)
+function OpenTelemetryShadow:access(config)
+  print("YYYYYYYYYYYYYYYYYYYYYYYYYYYY: ctx = " .. require("inspect")(config))
+  dynamic_hook.run_hook("opentelemetry-shadow", "access", config)
 end
 
 function OpenTelemetryShadow:header_filter(ctx)

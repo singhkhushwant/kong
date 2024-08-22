@@ -20,11 +20,14 @@ end
 
 
 function _M:register(method, func)
+  print("method = " .. require("inspect")(method))
+  print("func = " .. require("inspect")(func))
   if self.callbacks[method] then
     error("duplicate registration of " .. method)
   end
 
   local cap, func_or_err = parse_method_name(method)
+
   if not cap then
     return nil, "unable to get capabilities: " .. func_or_err
   end

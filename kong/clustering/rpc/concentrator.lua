@@ -250,6 +250,7 @@ end
 
 -- enqueue a RPC request to DP node with ID node_id
 function _M:_enqueue_rpc_request(node_id, payload)
+  print("payload = " .. require("inspect")(payload))
   local sql = string_format(RPC_REQUEST_ENQUEUE_SQL,
                             self.db.connector:escape_literal(node_id),
                             self.db.connector:escape_literal(self.worker_id),

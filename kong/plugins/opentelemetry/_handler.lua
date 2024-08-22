@@ -26,6 +26,7 @@ return function(priority)
   end
 
   function OpenTelemetryHandler:access(conf)
+    print("FROM PARENT OTEL conf = " .. require("inspect")(conf))
     -- Traces
     if conf.traces_endpoint then
       otel_traces.access(conf)

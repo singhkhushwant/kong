@@ -700,6 +700,7 @@ function Kong.init()
 
       if is_data_plane(config) then
         require("kong.clustering.services.debug").init(kong.rpc)
+        require("kong.clustering.services.observability").init(kong.rpc)
       end
     end
   end

@@ -3,30 +3,11 @@ local _M = {}
 
 local resty_log = require("resty.kong.log")
 local constants = require("kong.constants")
-local dynamic_hook = require("kong.dynamic_hook")
 
 
 local tostring = tostring
 
 
-
-
-local function rpc_debug_session_start(_node_id)
-
-  -- broadcast to all workers in a node
-  local ok, err = kong.worker_events.post("debug", "debug_session_start", {})
-  if not ok then
-    return nil, err
-  end
-
-  -- TODO: maybe add a value in the SHM to indicate that a debug session is active so that other
-  --       workers can copy the behavior
-
-  dynamic_hook.enable_by_default("opentelemetry-shadow")
-
-  return true
-
-end
 
 
 local function rpc_set_log_level(_node_id, new_log_level, timeout)
@@ -85,7 +66,6 @@ end
 function _M.init(manager)
   manager.callbacks:register("kong.debug.log_level.v1.get_log_level", rpc_get_log_level)
   manager.callbacks:register("kong.debug.log_level.v1.set_log_level", rpc_set_log_level)
-  manager.callbacks:register("kong.debug.foo.v1.start", rpc_debug_session_start)
 end
 
 

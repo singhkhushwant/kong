@@ -16,6 +16,7 @@ local request_id   = require "kong.observability.tracing.request_id"
 
 local PluginsIterator = require "kong.runloop.plugins_iterator"
 local log_level       = require "kong.runloop.log_level"
+local observability = require "kong.runloop.observability"
 local instrumentation = require "kong.observability.tracing.instrumentation"
 local req_dyn_hook   = require "kong.dynamic_hook"
 
@@ -901,6 +902,7 @@ return {
       STREAM_TLS_PASSTHROUGH_SOCK = fmt("unix:%s/stream_tls_passthrough.sock", socket_path)
 
       log_level.init_worker()
+      observability.init_worker()
 
       if kong.configuration.host_ports then
         HOST_PORTS = kong.configuration.host_ports
