@@ -1,7 +1,6 @@
 local otel_traces = require "kong.plugins.opentelemetry.traces"
 local otel_logs = require "kong.plugins.opentelemetry.logs"
-local dynamic_hook = require "kong.dynamic_hook"
-local o11y_logs = require "kong.observability.logs"
+local utils = require "kong.tools.utils"
 local kong_meta = require "kong.meta"
 
 return function(priority)
@@ -10,17 +9,18 @@ return function(priority)
     PRIORITY = priority,
   }
 
-
   function OpenTelemetryHandler:configure(configs)
+    print("self = " .. require("inspect")(self))
+    print("WERE IN CONFIGURE")
+    print("configs = " .. require("inspect")(configs))
     if configs then
       for _, config in ipairs(configs) do
         if config.logs_endpoint then
-          dynamic_hook.hook("observability_logs", "push", o11y_logs.maybe_push)
-          dynamic_hook.enable_by_default("observability_logs")
+          utils.start_log_hooks()
         end
 
         -- enable instrumentations based on the value of `config.tracing_instrumentations`
-        dynamic_hook.enable_by_default("instrumentations:request")
+        utils.start_instrumentation_hooks()
       end
     end
   end

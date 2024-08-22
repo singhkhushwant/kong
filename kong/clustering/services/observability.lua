@@ -5,10 +5,11 @@ local dynamic_hook = require("kong.dynamic_hook")
 
 
 
-local function rpc_set_session_start(_node_id, foo)
+local function rpc_set_session_start(_node_id, data)
+  print("data = " .. require("inspect")(data))
 
   -- broadcast to all workers in a node
-  local ok, err = kong.worker_events.post("observability", "start-session", {})
+  local ok, err = kong.worker_events.post("observability-debug-session", "toggle", data)
   if not ok then
     return nil, err
   end
@@ -16,24 +17,16 @@ local function rpc_set_session_start(_node_id, foo)
   -- todo: maybe add a value in the shm to indicate that a debug session is active so that other
   --       workers can copy the behavior
 
+  -- TODO: we don't know if we need this _here_. Who is receiving this event?
+  -- when we broadcast the worker_event every worker receives it (but not the one that it sent?)
   dynamic_hook.enable_by_default("opentelemetry-shadow")
 
   return "ok", nil
-  -- return true
 end
-
-
-local function rpc_get_session_start(_node_id)
-  return {
-    foo = "bar",
-  }
-end
-
 
 
 function _M.init(manager)
-  manager.callbacks:register("kong.observability.foo.v1.set_start", rpc_set_session_start)
-  manager.callbacks:register("kong.observability.foo.v1.get_start", rpc_get_session_start)
+  manager.callbacks:register("kong.observability.debug-session.v1.toggle", rpc_set_session_start)
 end
 
 

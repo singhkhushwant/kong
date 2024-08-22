@@ -1,5 +1,7 @@
 local http = require "resty.http"
 local clone = require "table.clone"
+local dynamic_hook = require "kong.dynamic_hook"
+local o11y_logs = require "kong.observability.logs"
 
 local tostring = tostring
 local null = ngx.null
@@ -47,9 +49,28 @@ local function get_headers(conf_headers)
   return headers
 end
 
+  local function start_log_hooks()
+      dynamic_hook.hook("observability_logs", "push", o11y_logs.maybe_push)
+      dynamic_hook.enable_by_default("observability_logs")
+  end
+
+  local function start_instrumentation_hooks()
+      dynamic_hook.enable_by_default("instrumentations:request")
+  end
+
+  local function start_all_hooks()
+    print("IN START_ALL LOGS")
+    start_log_hooks()
+    start_instrumentation_hooks()
+  end
+
+
 
 return {
   http_export_request = http_export_request,
   get_headers = get_headers,
   _log_prefix = _log_prefix,
+  start_all_hooks = start_all_hooks,
+  start_log_hooks = start_log_hooks,
+  start_instrumentation_hooks = start_instrumentation_hooks,
 }
