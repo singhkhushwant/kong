@@ -432,7 +432,7 @@ end
 local function configure(configurable, ctx)
   -- Disable hooks that are selectively enabled by plugins
   -- in their :configure handler
-  req_dyn_hook_disable_by_default("observability_logs")
+  kong.tracing.disable_hooks()
 
   ctx = ctx or ngx.ctx
   local kong_global = require "kong.global"
