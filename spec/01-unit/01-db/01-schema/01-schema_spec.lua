@@ -4153,7 +4153,7 @@ describe("schema", function()
       assert.same({ name = "test1", record = { x = "test1" } }, output)
     end)
 
-    it("does not take precedence if deprecated", function()
+    describe("with simple 'table_path' translation", function()
       local TestSchema = Schema.new({
         name = "test",
         fields = {
@@ -4175,6 +4175,7 @@ describe("schema", function()
                 }
               end,
               deprecation = {
+                replaced_with = { { path = { "name" } } },
                 message = "username is deprecated, please use name instead",
                 removal_in_version = "4.0",
               },
@@ -4191,6 +4192,7 @@ describe("schema", function()
                 }
               end,
               deprecation = {
+                replaced_with = { { path = { "record", "x" } } },
                 message = "y is deprecated, please use record.x instead",
                 removal_in_version = "4.0",
               },
@@ -4199,9 +4201,127 @@ describe("schema", function()
         },
       })
 
-      local input = { username = "ignored", name = "test1", record = { x = "test1" }, y = "ignored"  }
-      local output, _ = TestSchema:process_auto_fields(input)
-      assert.same({ name = "test1", record = { x = "test1" }  }, output)
+      it("notifes of error if values mismatch with replaced field", function()
+        local input = { username = "not-test-1", name = "test1", record = { x = "test2" }, y = "not-test-2"  }
+        local output, err = TestSchema:process_auto_fields(input)
+        assert.same({
+            username = 'both deprecated and new field are used but their values mismatch: username = "not-test-1" vs name = "test1"',
+            y = 'both deprecated and new field are used but their values mismatch: y = "not-test-2" vs record.x = "test2"' },
+          err
+        )
+        assert.falsy(output)
+      end)
+
+      it("accepts config if both new field and deprecated field defined and their values match", function()
+        local input = { username = "test-1", name = "test-1", record = { x = "test-2" }, y = "test-2"  }
+        local output, err = TestSchema:process_auto_fields(input)
+        assert.is_nil(err)
+        assert.same({name = "test-1", record = { x = "test-2" }}, output)
+      end)
+    end)
+
+    describe("with complex field translation", function()
+      local TestSchema = Schema.new({
+        name = "test",
+        fields = {
+          { name = { type = "string" } },
+          { record = {
+            type = "record",
+            fields = {
+              { x = { type = "string" } }
+            },
+          }},
+          { arr_new = {
+            type = "array",
+            elements = {
+              type = "number"
+            }
+          }}
+        },
+        shorthand_fields = {
+          {
+            username = {
+              type = "string",
+              func = function(value)
+                return {
+                  name = value:upper()
+                }
+              end,
+              deprecation = {
+                replaced_with = {
+                  { path = { "name" },
+                    translation = function(data)
+                      return data.name:lower()
+                    end }
+                },
+                message = "username is deprecated, please use name instead",
+                removal_in_version = "4.0",
+              },
+            },
+          },
+          {
+            y = {
+              type = "string",
+              func = function(value)
+                return {
+                  record = {
+                    x = value:upper(),
+                  },
+                }
+              end,
+              deprecation = {
+                replaced_with = {
+                  { path = { "record", "x" },
+                    translation = function (data)
+                      return data.record.x:lower()
+                    end
+                } },
+                message = "y is deprecated, please use record.x instead",
+                removal_in_version = "4.0",
+              },
+            },
+          },
+          {
+            arr_old = {
+              type = "array",
+              elements = {
+                type = "number"
+              },
+              func = function(value)
+                return { arr = table.sort(value, function(a,b) return a > b end ) } -- new field is reversed
+              end,
+              deprecation = {
+                replaced_with = {
+                  { path = { "arr_new" },
+                    translation = function (data)
+                      return table.sort(data.arr_new, function(a,b) return a < b end)
+                    end
+                  },
+                }
+              }
+            }
+          }
+        },
+      })
+
+      it("notifes of error if values mismatch with replaced field", function()
+        local input = { username = "not-test-1", name = "TEST1", record = { x = "TEST2" }, y = "not-test-2", arr_new = { 3, 2, 1 }, arr_old = { 1, 2, 4 }  }
+        local output, err = TestSchema:process_auto_fields(input)
+        assert.same({
+            arr_old = 'both deprecated and new field are used but their values mismatch: arr_old = { 1, 2, 4 } vs arr_new = { 1, 2, 3 }',
+            username = 'both deprecated and new field are used but their values mismatch: username = "not-test-1" vs name = "test1"',
+            y = 'both deprecated and new field are used but their values mismatch: y = "not-test-2" vs record.x = "test2"' },
+          err
+        )
+        assert.falsy(output)
+      end)
+
+      it("accepts config if both new field and deprecated field defined and their values match", function()
+        local input = { username = "test-1", name = "TEST-1", record = { x = "TEST-2" }, y = "test-2", arr_new = { 3, 2, 1 }, arr_old = { 1, 2, 3 }  }
+        local output, err = TestSchema:process_auto_fields(input)
+        assert.is_nil(err)
+        assert.same({name = "TEST-1", record = { x = "TEST-2" }, arr_new = { 1, 2, 3}}, output)
+      end)
     end)
 
     it("can produce multiple fields", function()
