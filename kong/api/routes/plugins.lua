@@ -73,7 +73,6 @@ local function post_plugin(_, _, _, parent)
   return parent(post_process)
 end
 
-
 local function patch_plugin(self, db, _, parent)
   local post = self.args and self.args.post
   if post then
@@ -113,7 +112,7 @@ end
 return {
   ["/plugins"] = {
     POST = post_plugin,
-  },
+   },
 
   ["/plugins/:plugins"] = {
     PATCH = patch_plugin

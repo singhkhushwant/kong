@@ -4,7 +4,6 @@ local _M = {}
 local dynamic_hook = require("kong.dynamic_hook")
 
 
-
 local function rpc_set_session_start(_node_id, data)
   print("data = " .. require("inspect")(data))
 
@@ -19,7 +18,7 @@ local function rpc_set_session_start(_node_id, data)
 
   -- TODO: we don't know if we need this _here_. Who is receiving this event?
   -- when we broadcast the worker_event every worker receives it (but not the one that it sent?)
-  dynamic_hook.enable_by_default("opentelemetry-shadow")
+  -- dynamic_hook.enable_by_default("opentelemetry-shadow")
 
   return "ok", nil
 end
@@ -28,6 +27,5 @@ end
 function _M.init(manager)
   manager.callbacks:register("kong.observability.debug-session.v1.toggle", rpc_set_session_start)
 end
-
 
 return _M

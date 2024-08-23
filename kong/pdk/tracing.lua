@@ -432,6 +432,7 @@ noop_tracer.active_span = NOOP
 noop_tracer.set_active_span = NOOP
 noop_tracer.process_span = NOOP
 noop_tracer.set_should_sample = NOOP
+noop_tracer.disable_hooks = NOOP
 noop_tracer.get_sampling_decision = NOOP
 
 local VALID_TRACING_PHASES = {
@@ -609,9 +610,25 @@ local function new_tracer(name, options)
     return not not sampled
   end
 
+  -- TODO: add other commands here that are currently in opentelemetry/utils.lua
+  function self:disable_hooks()
+    local disable_hook = require "kong.dynamic_hook".disable_by_default
+    disable_hook("observability_logs")
+    disable_hook("instrumentations:request")
+  end
+
+  -- TODO
+  -- function self:enable_all_hooks()
+  --   -- nyi
+  -- end
+
+
   tracer_memo[name] = setmetatable(self, tracer_mt)
   return tracer_memo[name]
 end
+
+
+
 
 tracer_mt.new = new_tracer
 noop_tracer.new = new_tracer

@@ -10,9 +10,6 @@ return function(priority)
   }
 
   function OpenTelemetryHandler:configure(configs)
-    print("self = " .. require("inspect")(self))
-    print("WERE IN CONFIGURE")
-    print("configs = " .. require("inspect")(configs))
     if configs then
       for _, config in ipairs(configs) do
         if config.logs_endpoint then
@@ -26,13 +23,10 @@ return function(priority)
   end
 
   function OpenTelemetryHandler:access(conf)
-    print("FROM PARENT OTEL conf = " .. require("inspect")(conf))
     -- Traces
     if conf.traces_endpoint then
       otel_traces.access(conf)
     end
-    -- Dynamic configurable array which contains instrumentation scopes (route, plugins, all)
-    -- In here we enable the hook, which based on the configuration, which can change at runtine,
   end
 
   function OpenTelemetryHandler:header_filter(conf)

@@ -88,6 +88,16 @@ function Plugins:insert(entity, options)
 end
 
 
+function Plugins:page(size, offset, options)
+  local plugins, err, err_t = self.super.page(self, size, offset, options)
+  for i, plugin in ipairs(plugins) do
+    if plugin.name == "opentelemetry-shadow" then
+      plugins[i] = nil
+    end
+  end
+  return plugins, err, err_t
+end
+
 function Plugins:update(primary_key, entity, options)
   if entity.protocols or entity.service or entity.route then
     if (entity.protocols and not entity.route)
