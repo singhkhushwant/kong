@@ -142,6 +142,13 @@ local function http_export_traces(conf, spans)
   return ok, err
 end
 
+local function rpc_call(conf, data)
+  -- print("conf = " .. require("inspect")(conf))
+  -- kong.rpc:call(kong.configuration.cluster_control_plane, "kong.observability.debug-session.v1.toggle", data)
+  kong.rpc:call("control_plane", "kong.observability.debug-session.v1.toggle", data)
+  return true
+end
+
 
 local function log(conf)
   ngx_log(ngx_DEBUG, _log_prefix, "total spans in current request: ", ngx.ctx.KONG_SPANS and #ngx.ctx.KONG_SPANS)
@@ -163,7 +170,8 @@ local function log(conf)
 
     local ok, err = Queue.enqueue(
       queue_conf,
-      http_export_traces,
+      -- http_export_traces,
+      rpc_call,
       conf,
       encode_span(span)
     )
