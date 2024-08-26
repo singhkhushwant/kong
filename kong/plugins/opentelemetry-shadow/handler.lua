@@ -43,7 +43,7 @@ end
 
 function OpenTelemetryShadow:log(config)
   -- dynamic_hook.run_hook("opentelemetry-shadow", "log", config)
-  print("config = " .. require("inspect")(config))
+  print("in shadow plugin / log, config = " .. require("inspect")(config))
   return _handler_log(config)
 end
 

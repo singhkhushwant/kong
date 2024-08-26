@@ -584,7 +584,6 @@ local function new_tracer(name, options)
     local trace_id = tracing_context.get_raw_trace_id(ctx)
     local sampling_rate = plugin_sampling_rate or kong.configuration.tracing_sampling_rate
 
-    print("root_span = " .. require("inspect")(root_span))
     if not root_span or root_span.attributes["kong.propagation_only"] then
       -- should not sample if there is no root span or if the root span is
       -- a dummy created only to propagate headers

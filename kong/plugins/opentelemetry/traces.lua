@@ -15,6 +15,7 @@ local ngx_ERR = ngx.ERR
 local ngx_DEBUG = ngx.DEBUG
 
 local http_export_request = otel_utils.http_export_request
+local rpc_export_request = otel_utils.rpc_export_request
 local get_headers = otel_utils.get_headers
 local _log_prefix = otel_utils._log_prefix
 local encode_traces = otlp.encode_traces
@@ -120,16 +121,24 @@ local function header_filter(conf)
 end
 
 
-local function http_export_traces(conf, spans)
+local function export_traces(conf, spans)
   local headers = get_headers(conf.headers)
   local payload = encode_traces(spans, conf.resource_attributes)
 
-  local ok, err = http_export_request({
-    connect_timeout = conf.connect_timeout,
-    send_timeout = conf.send_timeout,
-    read_timeout = conf.read_timeout,
-    endpoint = conf.traces_endpoint,
-  }, payload, headers)
+  local ok, err
+  if conf.traces_endpoint:find("^kong%-rpc://") then -- TODO: make utils func `get_protocol`?
+    print("OTEL: USING RPC")                         -- TODO: disallow rpc prefix in schema, for otel (only allow from shadow)
+    ok, err = rpc_export_request(conf, payload)
+
+  else
+    print("OTEL: USING HTTP")
+    ok, err =  http_export_request({
+      connect_timeout = conf.connect_timeout,
+      send_timeout = conf.send_timeout,
+      read_timeout = conf.read_timeout,
+      endpoint = conf.traces_endpoint,
+    }, payload, headers)
+  end
 
   if ok then
     ngx_log(ngx_DEBUG, _log_prefix, "exporter sent ", #spans,
@@ -142,15 +151,9 @@ local function http_export_traces(conf, spans)
   return ok, err
 end
 
-local function rpc_call(conf, data)
-  -- print("conf = " .. require("inspect")(conf))
-  -- kong.rpc:call(kong.configuration.cluster_control_plane, "kong.observability.debug-session.v1.toggle", data)
-  kong.rpc:call("control_plane", "kong.observability.debug-session.v1.toggle", data)
-  return true
-end
-
 
 local function log(conf)
+  print("in OTel plugin / log, conf.traces_endpoint is " .. conf.traces_endpoint)
   ngx_log(ngx_DEBUG, _log_prefix, "total spans in current request: ", ngx.ctx.KONG_SPANS and #ngx.ctx.KONG_SPANS)
 
   kong.tracing.process_span(function (span)
@@ -170,8 +173,7 @@ local function log(conf)
 
     local ok, err = Queue.enqueue(
       queue_conf,
-      -- http_export_traces,
-      rpc_call,
+      export_traces,
       conf,
       encode_span(span)
     )

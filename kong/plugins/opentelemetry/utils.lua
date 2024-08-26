@@ -35,6 +35,15 @@ local function http_export_request(conf, pb_data, headers)
 end
 
 
+local function rpc_export_request(conf, data)
+  -- print("conf = " .. require("inspect")(conf))
+  -- kong.rpc:call(kong.configuration.cluster_control_plane, "kong.observability.debug-session.v1.toggle", data)
+  print("in OTel plugin / rpc_call handler")
+  kong.rpc:call("control_plane", "kong.observability.debug-session.v1.toggle", data)
+  return true
+end
+
+
 local function get_headers(conf_headers)
   if not conf_headers or conf_headers == null then
     return DEFAULT_HEADERS
@@ -68,6 +77,7 @@ end
 
 return {
   http_export_request = http_export_request,
+  rpc_export_request = rpc_export_request,
   get_headers = get_headers,
   _log_prefix = _log_prefix,
   start_all_hooks = start_all_hooks,
