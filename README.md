@@ -84,7 +84,7 @@ Please see the [Changelog](CHANGELOG.md) for more details about a given release.
 - Join the Kong discussions at the Kong Nation forum: [https://discuss.konghq.com/](https://discuss.konghq.com/)
 - Join our [Community Slack](http://kongcommunity.slack.com/)
 - Read up on the latest happenings at our [blog](https://konghq.com/blog/)
-- Follow us on [X](https://x.com/thekonginc)
+- Follow us on [X (formerly Twitter)](https://x.com/thekonginc)
 - Subscribe to our [YouTube channel](https://www.youtube.com/c/KongInc/videos)
 - Visit our [homepage](https://konghq.com/) to learn more
 
